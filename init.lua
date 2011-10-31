@@ -54,6 +54,7 @@ wc_mt = {
 
 local errmsg = ffi.new ( "char[80]" )
 local function open ( filename )
+	assert ( filename , "No filename given" )
 	local flags = wavpack_defs.OPEN_WVC + wavpack_defs.OPEN_NORMALIZE
 	local wc = wavpack.WavpackOpenFileInput ( filename , errmsg , flags , 15 ) -- 15 for 16 bit audio
 	if wc == nil then
