@@ -30,7 +30,11 @@ local function bmask ( num , mask )
 end
 
 ffi_add_include_dir ( [[U:\Programming\wavpack\wavpackdll\]] )
-ffi_defs ( rel_dir .. "defs.h" , { [[wavpack.h]] } )
+local cdefs = ffi_defs ( rel_dir .. "defs.h" , { [[wavpack.h]] } , true )
+-- Make WavpackContext an incomplete type instead of a void so that we can attach metamethods
+local cdefs , n = cdefs:gsub ( [[typedef%s+void%s+WavpackContext%s*;]] , [[typedef struct WavpackContext WavpackContext;]] )
+assert ( n == 1 , "Strange header file" )
+ffi.cdef ( cdefs )
 
 local wavpack
 assert ( jit , "jit table unavailable" )
@@ -50,6 +54,7 @@ local M = {
 wc_methods = { }
 wc_mt = {
 	__index = wc_methods ;
+	__gc = wavpack.WavpackCloseFile ;
 }
 
 local errmsg = ffi.new ( "char[80]" )
@@ -60,18 +65,12 @@ local function open ( filename )
 	if wc == nil then
 		error ( ffi.string ( errmsg ) )
 	end
-	return setmetatable ( { WavpackContext = wc } , wc_mt )
+	return wc
 end
 M.openfile = open
 
-local function close ( self )
-	assert ( wavpack.WavpackCloseFile ( self.WavpackContext ) == nil )
-end
-wc_mt.__gc = close
-
 function wc_methods:getinfo ( )
-	local wc = self.WavpackContext
-	local mask = wavpack.WavpackGetMode ( wc )
+	local mask = wavpack.WavpackGetMode ( self )
 	return {
 		WVC 		= bmask ( mask , wavpack_defs.MODE_WVC ) ~= 0 ;
 		lossless 	= bmask ( mask , wavpack_defs.MODE_LOSSLESS ) ~= 0 ;
@@ -88,57 +87,59 @@ function wc_methods:getinfo ( )
 		MD5			= bmask ( mask , wavpack_defs.MODE_MD5 ) ~= 0 ;
 		DNS 		= bmask ( mask , wavpack_defs.MODE_DNS ) ~= 0 ;
 
-		channels 			= wavpack.WavpackGetNumChannels ( wc ) ;
-		sample_rate 		= wavpack.WavpackGetSampleRate ( wc ) ;
-		bits_per_sample 	= wavpack.WavpackGetBitsPerSample ( wc ) ;
-		bytes_per_sample 	= wavpack.WavpackGetBytesPerSample ( wc ) ;
-		version 			= wavpack.WavpackGetVersion ( wc ) ;
-		num_samples 		= wavpack.WavpackGetNumSamples ( wc ) ;
-		filesize 			= wavpack.WavpackGetFileSize ( wc ) ;
-		ratio	 			= wavpack.WavpackGetRatio ( wc ) ;
-		avg_bitrate			= wavpack.WavpackGetAverageBitrate ( wc , true) ;
-		avg_bitrate_no_wvc	= wavpack.WavpackGetAverageBitrate ( wc , false) ;
-		norm 				= wavpack.WavpackGetFloatNormExp ( wc ) ;
-		--md5sum 			= wavpack.WavpackGetMD5Sum ( wc ) ;
+		channels 			= wavpack.WavpackGetNumChannels ( self ) ;
+		sample_rate 		= wavpack.WavpackGetSampleRate ( self ) ;
+		bits_per_sample 	= wavpack.WavpackGetBitsPerSample ( self ) ;
+		bytes_per_sample 	= wavpack.WavpackGetBytesPerSample ( self ) ;
+		version 			= wavpack.WavpackGetVersion ( self ) ;
+		num_samples 		= wavpack.WavpackGetNumSamples ( self ) ;
+		filesize 			= wavpack.WavpackGetFileSize ( self ) ;
+		ratio	 			= wavpack.WavpackGetRatio ( self ) ;
+		avg_bitrate			= wavpack.WavpackGetAverageBitrate ( self , true) ;
+		avg_bitrate_no_wvc	= wavpack.WavpackGetAverageBitrate ( self , false) ;
+		norm 				= wavpack.WavpackGetFloatNormExp ( self ) ;
+		--md5sum 			= wavpack.WavpackGetMD5Sum ( self ) ;
 	}
 end
 
--- dest should be a buffer of samples*channels of int32_t
-function wc_methods:unpack ( dest , n )
-	return wavpack.WavpackUnpackSamples ( self.WavpackContext , dest , n )
-end
-
 function wc_methods:seek ( pos )
-	local res = wavpack.WavpackSeekSample ( self.WavpackContext , pos ) ~= 0
+	local res = wavpack.WavpackSeekSample ( self , pos ) ~= 0
 	if not res then
 		error ( "Could not seek" )
 	end
 end
 
 function wc_methods:pos ( )
-	local pos = wavpack.WavpackGetSampleIndex ( self.WavpackContext )
+	local pos = wavpack.WavpackGetSampleIndex ( self )
 	if pos == -1 then return false
 	else return pos end
 end
 
+-- dest should be a buffer of samples*channels of int32_t
+wc_methods.unpack = wavpack.WavpackUnpackSamples
+
 function wc_methods:instant_bitrate ( )
-	return wavpack.WavpackGetInstantBitrate ( self.WavpackContext )
+	local bitrate = wavpack.WavpackGetInstantBitrate ( self )
+	if bitrate == 0 then return false
+	else return bitrate end
 end
 
-function wc_methods:num_errors ( )
-	return wavpack.WavpackGetNumErrors ( self.WavpackContext )
-end
+wc_methods.num_errors = wavpack.WavpackGetNumErrors
 
 function wc_methods:lossy_blocks ( )
-	return wavpack.WavpackLossyBlocks ( self.WavpackContext )
+	return wavpack.WavpackLossyBlocks ( self ) ~= 0
 end
 
 function wc_methods:progress ( )
-	return wavpack.WavpackGetProgress ( self.WavpackContext )
+	local prog = wavpack.WavpackGetProgress ( self )
+	if prog == -1 then return false
+	else return prog end
 end
 
 function wc_methods:lasterr ( wc )
-	return ffi.string ( wavpack.WavpackGetErrorMessage ( self.WavpackContext ) )
+	return ffi.string ( wavpack.WavpackGetErrorMessage ( self ) )
 end
+
+ffi.metatype ( "struct WavpackContext" , wc_mt )
 
 return M
