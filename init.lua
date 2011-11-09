@@ -137,7 +137,7 @@ function wc_methods:progress ( )
 	else return prog end
 end
 
-function wc_methods:lasterr ( wc )
+function wc_methods:lasterr ( )
 	return ffi.string ( wavpack.WavpackGetErrorMessage ( self ) )
 end
 
