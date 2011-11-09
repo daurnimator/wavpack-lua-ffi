@@ -40,7 +40,8 @@ local wavpack
 assert ( jit , "jit table unavailable" )
 if jit.os == "Windows" then
 	wavpack = ffi.load ( rel_dir .. "wavpackdll" ) -- Yeah, its actually called wavpackdll.dll
---elseif jit.os == "Linux" or jit.os == "OSX" or jit.os == "POSIX" or jit.os == "BSD" then
+elseif jit.os == "Linux" or jit.os == "OSX" or jit.os == "POSIX" or jit.os == "BSD" then
+	wavpack = ffi.load ( [[libwavpack]] )
 else
 	error ( "Unknown platform" )
 end
