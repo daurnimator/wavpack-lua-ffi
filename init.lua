@@ -55,7 +55,6 @@ local M = {
 wc_methods = { }
 wc_mt = {
 	__index = wc_methods ;
-	__gc = wavpack.WavpackCloseFile ;
 }
 
 local errmsg = ffi.new ( "char[80]" )
@@ -66,6 +65,7 @@ local function open ( filename )
 	if wc == nil then
 		error ( ffi.string ( errmsg ) )
 	end
+	ffi.gc ( wc , wavpack.WavpackCloseFile )
 	return wc
 end
 M.openfile = open
