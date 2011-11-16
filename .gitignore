@@ -1,2 +1,4 @@
-defs.h
+wavpack_defs.h
+wavpack.h
 *.dll
+samples.raw

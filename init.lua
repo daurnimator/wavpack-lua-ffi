@@ -2,6 +2,7 @@
 
 local rel_dir = assert ( debug.getinfo ( 1 , "S" ).source:match ( [=[^@(.-[/\]?)[^/\]*$]=] ) , "Current directory unknown" ) .. "./"
 
+local assert , error = assert , error
 
 local ffi 					= require"ffi"
 local ffi_util 				= require"ffi_util"
@@ -27,15 +28,14 @@ local function bmask ( num , mask )
 	return rshift ( band ( num , mask ) , lowest_bit_set ( mask ) )
 end
 
-ffi_add_include_dir ( [[U:\Programming\wavpack\wavpackdll\]] )
-local cdefs = ffi_defs ( rel_dir .. "defs.h" , { [[wavpack.h]] } , true )
+local cdefs = ffi_defs ( rel_dir .. "wavpack_defs.h" , { [[wavpack.h]] } , true )
 -- Make WavpackContext an incomplete type instead of a void so that we can attach metamethods
 local cdefs , n = cdefs:gsub ( [[typedef%s+void%s+WavpackContext%s*;]] , [[typedef struct WavpackContext WavpackContext;]] )
 assert ( n == 1 , "Strange header file" )
 ffi.cdef ( cdefs )
 
-local wavpack
 assert ( jit , "jit table unavailable" )
+local wavpack
 if jit.os == "Windows" then
 	wavpack = ffi.load ( rel_dir .. "wavpackdll" ) -- Yeah, its actually called wavpackdll.dll
 elseif jit.os == "Linux" or jit.os == "OSX" or jit.os == "POSIX" or jit.os == "BSD" then
@@ -50,8 +50,8 @@ local M = {
 	libversion = ffi.string ( wavpack.WavpackGetLibraryVersionString() ) ;
 }
 
-wc_methods = { }
-wc_mt = {
+local wc_methods = { }
+local wc_mt = {
 	__index = wc_methods ;
 }
 
