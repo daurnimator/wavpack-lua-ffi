@@ -30,21 +30,23 @@ end
 
 ffi_add_include_dir ( rel_dir )
 
+assert ( jit , "jit table unavailable" )
+local wavpack
+if jit.os == "Windows" then
+	wavpack = ffi.load ( rel_dir .. "wavpackdll" ) -- Yeah, its actually called wavpackdll.dll
+elseif jit.os == "Linux" or jit.os == "OSX" or jit.os == "POSIX" or jit.os == "BSD" then
+	ffi_add_include_dir ( "/usr/bin/wavpack/" )
+	wavpack = ffi.load ( [[libwavpack]] )
+else
+	error ( "Unknown platform" )
+end
+
 local cdefs = ffi_defs ( rel_dir .. "wavpack_defs.h" , { [[wavpack.h]] } , true )
 -- Make WavpackContext an incomplete type instead of a void so that we can attach metamethods
 local cdefs , n = cdefs:gsub ( [[typedef%s+void%s+WavpackContext%s*;]] , [[typedef struct WavpackContext WavpackContext;]] )
 assert ( n == 1 , "Strange header file" )
 ffi.cdef ( cdefs )
 
-assert ( jit , "jit table unavailable" )
-local wavpack
-if jit.os == "Windows" then
-	wavpack = ffi.load ( rel_dir .. "wavpackdll" ) -- Yeah, its actually called wavpackdll.dll
-elseif jit.os == "Linux" or jit.os == "OSX" or jit.os == "POSIX" or jit.os == "BSD" then
-	wavpack = ffi.load ( [[libwavpack]] )
-else
-	error ( "Unknown platform" )
-end
 
 local wavpack_defs = ffi_process_defines ( [[wavpack.h]] )
 
