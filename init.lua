@@ -28,6 +28,8 @@ local function bmask ( num , mask )
 	return rshift ( band ( num , mask ) , lowest_bit_set ( mask ) )
 end
 
+ffi_add_include_dir ( rel_dir )
+
 local cdefs = ffi_defs ( rel_dir .. "wavpack_defs.h" , { [[wavpack.h]] } , true )
 -- Make WavpackContext an incomplete type instead of a void so that we can attach metamethods
 local cdefs , n = cdefs:gsub ( [[typedef%s+void%s+WavpackContext%s*;]] , [[typedef struct WavpackContext WavpackContext;]] )
@@ -44,7 +46,7 @@ else
 	error ( "Unknown platform" )
 end
 
-local wavpack_defs = ffi_process_defines( [[wavpack.h]] )
+local wavpack_defs = ffi_process_defines ( [[wavpack.h]] )
 
 local M = {
 	libversion = ffi.string ( wavpack.WavpackGetLibraryVersionString() ) ;
