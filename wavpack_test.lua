@@ -2,12 +2,9 @@
 
 local ioopen = io.open
 
-local general 				= require"general"
-local pretty 				= general.pretty_print
-local current_script_dir 	= general.current_script_dir
-local rel_dir = assert ( current_script_dir ( ) , "Current directory unknown" )
-package.path = package.path .. ";" .. rel_dir .. "../?/init.lua"
 
+package.path = "./?/init.lua;" .. package.path
+package.loaded [ "WavPack" ] = dofile ( "init.lua" )
 local wavpack = require"WavPack"
 local ffi = require"ffi"
 
@@ -17,7 +14,7 @@ local inputfile = arg[1] or [[W:\Random Downloaded\[07] The Mountain Goats - No 
 
 local wc = wavpack.openfile ( inputfile )
 local info = wc:getinfo ( )
-pretty ( info )
+for k , v in pairs ( info ) do print ( k , v ) end
 
 local size = info.num_samples * info.channels
 local dest = ffi.new ( "int32_t[?]" , size )

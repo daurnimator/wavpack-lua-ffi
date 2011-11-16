@@ -1,9 +1,7 @@
 -- FFI binding to WavPack
 
-local general 				= require"general"
-local current_script_dir 	= general.current_script_dir
+local rel_dir = assert ( debug.getinfo ( 1 , "S" ).source:match ( [=[^@(.-[/\]?)[^/\]*$]=] ) , "Current directory unknown" ) .. "./"
 
-local rel_dir = assert ( current_script_dir ( ) , "Current directory unknown" )
 
 local ffi 					= require"ffi"
 local ffi_util 				= require"ffi_util"
