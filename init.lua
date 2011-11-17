@@ -35,7 +35,7 @@ local wavpack
 if jit.os == "Windows" then
 	wavpack = ffi.load ( rel_dir .. "wavpackdll" ) -- Yeah, its actually called wavpackdll.dll
 elseif jit.os == "Linux" or jit.os == "OSX" or jit.os == "POSIX" or jit.os == "BSD" then
-	ffi_add_include_dir ( "/usr/bin/wavpack/" )
+	ffi_add_include_dir ( "/usr/include/wavpack/" )
 	wavpack = ffi.load ( [[libwavpack]] )
 else
 	error ( "Unknown platform" )
