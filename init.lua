@@ -10,7 +10,7 @@ local ffi_add_include_dir = ffi_util.ffi_add_include_dir
 local ffi_defs            = ffi_util.ffi_defs
 
 local bit = require"bit"
-local band , lshift , rshift = bit.band bit.lshift , bit.rshift
+local band , lshift , rshift = bit.band , bit.lshift , bit.rshift
 
 local function lowest_bit_set ( v )
 	local c = 32
