@@ -4,15 +4,13 @@ local rel_dir = assert ( debug.getinfo ( 1 , "S" ).source:match ( [=[^@(.-[/\]?)
 
 local assert , error = assert , error
 
-local ffi 					= require"ffi"
-local ffi_util 				= require"ffi_util"
-local ffi_add_include_dir 	= ffi_util.ffi_add_include_dir
-local ffi_defs 				= ffi_util.ffi_defs
-local ffi_process_defines 	= ffi_util.ffi_process_defines
+local ffi                 = require"ffi"
+local ffi_util            = require"ffi_util"
+local ffi_add_include_dir = ffi_util.ffi_add_include_dir
+local ffi_defs            = ffi_util.ffi_defs
 
-local bit					= require"bit"
-local band 					= bit.band
-local lshift , rshift 		= bit.lshift , bit.rshift
+local bit = require"bit"
+local band , lshift , rshift = bit.band bit.lshift , bit.rshift
 
 local function lowest_bit_set ( v )
 	local c = 32
@@ -41,14 +39,15 @@ else
 	error ( "Unknown platform" )
 end
 
-local cdefs = ffi_defs ( rel_dir .. "wavpack_defs.h" , { [[wavpack.h]] } , true )
--- Make WavpackContext an incomplete type instead of a void so that we can attach metamethods
-local cdefs , n = cdefs:gsub ( [[typedef%s+void%s+WavpackContext%s*;]] , [[typedef struct WavpackContext WavpackContext;]] )
-assert ( n == 1 , "Strange header file" )
-ffi.cdef ( cdefs )
-
-
-local wavpack_defs = ffi_process_defines ( [[wavpack.h]] )
+local wavpack_defs
+do
+	local cdefs , wavpack_defs = ffi_defs ( [[wavpack_funcs.h]] , [[wavpack_defs.h]] , { [[wavpack.h]] } , true )
+	-- Make WavpackContext an incomplete type instead of a void so that we can attach metamethods
+	local n
+	cdefs , n = cdefs:gsub ( [[typedef%s+void%s+WavpackContext%s*;]] , [[typedef struct WavpackContext WavpackContext;]] )
+	assert ( n == 1 , "Strange header file" )
+	ffi.cdef ( cdefs )
+end
 
 local M = {
 	libversion = ffi.string ( wavpack.WavpackGetLibraryVersionString() ) ;
